@@ -8,7 +8,6 @@
 	const deltaMinutos = _DELTA_WINDOW_S / 60;
 
 	const REFRESH_MS = 30_000;
-	const REFRESH_S = REFRESH_MS / 1000;
 
 	// Refresca solo re-corriendo el mismo load() de +page.ts (via su `depends`),
 	// asi el fetch vive en un solo lugar. Los $effect corren solo en el cliente,
@@ -66,13 +65,15 @@
 		return resultado;
 	});
 
-	// Derivado de lastUpdated + now en vez de su propio contador independiente,
-	// para que nunca se desincronice del refresco real (aunque el navegador
-	// pause el timer un rato al estar la pestana en background, por ejemplo).
-	const secondsLeft = $derived(
-		now !== null && lastUpdated
-			? Math.max(0, REFRESH_S - Math.floor((now - lastUpdated.getTime()) / 1000))
-			: REFRESH_S
+	// Progreso del "pastel": ciclo de _DELTA_WINDOW_S alineado al reloj de
+	// pared (no a cuando cargaste la pagina), asi es el mismo para cualquiera
+	// que la tenga abierta y se resetea siempre en el mismo segundo real --
+	// igual que el propio corte de 5 minutos que usa el backend para el delta.
+	const segundosEnElCiclo = $derived(
+		now !== null ? Math.floor(now / 1000) % _DELTA_WINDOW_S : 0
+	);
+	const porcentajeRestante = $derived(
+		now !== null ? ((_DELTA_WINDOW_S - segundosEnElCiclo) / _DELTA_WINDOW_S) * 100 : 100
 	);
 
 	const fmt = (n: number) => n.toLocaleString('es-MX');
@@ -97,9 +98,13 @@
 <div class="leaderboard">
 	<div class="header-row">
 		<h1>Leaderboard de créditos</h1>
-		<div class="countdown" title="Segundos para el próximo refresco">
-			{secondsLeft}
-		</div>
+		<div
+			class="pie"
+			style="--pct: {porcentajeRestante}%"
+			role="img"
+			aria-label="{Math.ceil(_DELTA_WINDOW_S - segundosEnElCiclo)} segundos para el próximo corte de {deltaMinutos} minutos"
+			title="{Math.ceil(_DELTA_WINDOW_S - segundosEnElCiclo)}s para el próximo corte de {deltaMinutos} min"
+		></div>
 	</div>
 
 	{#if !data.status}
@@ -157,6 +162,15 @@
 </div>
 
 <style>
+	/* Registra --pct como <percentage> animable: sin esto, transition sobre un
+	   conic-gradient que solo cambia via variable CSS no interpola -- salta
+	   de un valor al siguiente en vez de girar suave. */
+	@property --pct {
+		syntax: '<percentage>';
+		inherits: true;
+		initial-value: 100%;
+	}
+
 	.leaderboard {
 		padding: 0.5rem 0.25rem;
 		color: #111111;
@@ -175,20 +189,19 @@
 		font-size: 1.4rem;
 	}
 
-	.countdown {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
+	.pie {
 		width: 3.25rem;
 		height: 3.25rem;
 		flex-shrink: 0;
 		border-radius: 50%;
-		background: rgba(17, 17, 17, 0.08);
 		border: 2px solid rgba(17, 17, 17, 0.25);
-		font-size: 1.5rem;
-		font-weight: 800;
-		font-variant-numeric: tabular-nums;
-		color: #111111;
+		background: conic-gradient(
+			rgba(17, 17, 17, 0.65) 0% var(--pct),
+			rgba(17, 17, 17, 0.08) var(--pct) 100%
+		);
+		/* El giro se anima solo: --pct cambia un poco cada segundo (viene de
+		   $derived), así que el navegador interpola el gradiente entre valores. */
+		transition: background 0.3s linear;
 	}
 
 	.meta,
