@@ -5,14 +5,25 @@
 	let { data }: { data: PageData } = $props();
 
 	const REFRESH_MS = 30_000;
+	const REFRESH_S = REFRESH_MS / 1000;
 
 	// Refresca solo re-corriendo el mismo load() de +page.ts (via su `depends`),
-	// asi el fetch vive en un solo lugar. $effect corre solo en el cliente, asi
-	// que el intervalo nunca se arma durante el SSR.
+	// asi el fetch vive en un solo lugar. Los $effect corren solo en el cliente,
+	// asi que ninguno de estos timers se arma durante el SSR.
 	let lastUpdated = $state(new Date());
+	let now = $state(Date.now());
 
 	$effect(() => {
 		const id = setInterval(() => invalidate('app:leaderboard'), REFRESH_MS);
+		return () => clearInterval(id);
+	});
+
+	// Solo mueve el reloj visual del contador -- el refresco real de datos no
+	// depende de este timer, por eso van separados.
+	$effect(() => {
+		const id = setInterval(() => {
+			now = Date.now();
+		}, 1000);
 		return () => clearInterval(id);
 	});
 
@@ -20,6 +31,13 @@
 		data.status; // dependencia: cada vez que invalidate() trae datos nuevos
 		lastUpdated = new Date();
 	});
+
+	// Derivado de lastUpdated + now en vez de su propio contador independiente,
+	// para que nunca se desincronice del refresco real (aunque el navegador
+	// pause el timer un rato al estar la pestana en background, por ejemplo).
+	const secondsLeft = $derived(
+		Math.max(0, REFRESH_S - Math.floor((now - lastUpdated.getTime()) / 1000))
+	);
 
 	const fmt = (n: number) => n.toLocaleString('es-MX');
 
@@ -41,7 +59,12 @@
 </svelte:head>
 
 <div class="leaderboard">
-	<h1>Leaderboard de créditos</h1>
+	<div class="header-row">
+		<h1>Leaderboard de créditos</h1>
+		<div class="countdown" title="Segundos para el próximo refresco">
+			{secondsLeft}
+		</div>
+	</div>
 
 	{#if !data.status}
 		<p class="error">
@@ -56,9 +79,7 @@
 				data.status.stats.systems
 			)} sistemas
 		</p>
-		<p class="refresh">
-			actualizado {lastUpdated.toLocaleTimeString('es-MX')} · se refresca sola cada 30s
-		</p>
+		<p class="refresh">actualizado {lastUpdated.toLocaleTimeString('es-MX')}</p>
 
 		<table>
 			<thead>
@@ -95,9 +116,33 @@
 		color: #111111;
 	}
 
+	.header-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 0.5rem;
+	}
+
 	h1 {
-		margin: 0 0 0.5rem;
+		margin: 0;
 		font-size: 1.4rem;
+	}
+
+	.countdown {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 3.25rem;
+		height: 3.25rem;
+		flex-shrink: 0;
+		border-radius: 50%;
+		background: rgba(17, 17, 17, 0.08);
+		border: 2px solid rgba(17, 17, 17, 0.25);
+		font-size: 1.5rem;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+		color: #111111;
 	}
 
 	.meta,
