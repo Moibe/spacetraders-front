@@ -1,7 +1,25 @@
 <script lang="ts">
+	import { invalidate } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const REFRESH_MS = 30_000;
+
+	// Refresca solo re-corriendo el mismo load() de +page.ts (via su `depends`),
+	// asi el fetch vive en un solo lugar. $effect corre solo en el cliente, asi
+	// que el intervalo nunca se arma durante el SSR.
+	let lastUpdated = $state(new Date());
+
+	$effect(() => {
+		const id = setInterval(() => invalidate('app:leaderboard'), REFRESH_MS);
+		return () => clearInterval(id);
+	});
+
+	$effect(() => {
+		data.status; // dependencia: cada vez que invalidate() trae datos nuevos
+		lastUpdated = new Date();
+	});
 
 	const fmt = (n: number) => n.toLocaleString('es-MX');
 
@@ -37,6 +55,9 @@
 			{fmt(data.status.stats.agents)} agentes · {fmt(data.status.stats.ships)} naves · {fmt(
 				data.status.stats.systems
 			)} sistemas
+		</p>
+		<p class="refresh">
+			actualizado {lastUpdated.toLocaleTimeString('es-MX')} · se refresca sola cada 30s
 		</p>
 
 		<table>
@@ -84,6 +105,12 @@
 		margin: 0.25rem 0;
 		font-size: 0.9rem;
 		color: rgba(17, 17, 17, 0.7);
+	}
+
+	.refresh {
+		margin: 0.5rem 0 0;
+		font-size: 0.75rem;
+		color: rgba(17, 17, 17, 0.5);
 	}
 
 	table {

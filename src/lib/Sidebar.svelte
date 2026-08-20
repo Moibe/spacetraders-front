@@ -138,45 +138,6 @@
     display: none;
   }
 
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.7rem 0.95rem;
-    color: rgba(17, 17, 17, 0.85);
-    text-decoration: none;
-    font-size: 0.95rem;
-    letter-spacing: 0.01em;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    transition: background 0.18s ease, border-color 0.18s ease;
-  }
-
-  .nav-ico {
-    width: 16px;
-    height: 16px;
-    border-radius: 5px;
-    flex-shrink: 0;
-    background: rgba(17, 17, 17, 0.55);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  }
-
-  .nav-item:hover {
-    background: rgba(255, 255, 255, 0.65);
-    border-color: rgba(17, 17, 17, 0.14);
-  }
-
-  .nav-item[aria-current='page'] {
-    color: #000;
-    background: rgba(17, 17, 17, 0.1);
-    border-color: rgba(17, 17, 17, 0.35);
-    box-shadow: 0 0 0 1px rgba(17, 17, 17, 0.1) inset;
-  }
-
-  .nav-item[aria-current='page'] .nav-ico {
-    background: #000;
-  }
-
   .sidebar-footer {
     display: flex;
     align-items: center;
