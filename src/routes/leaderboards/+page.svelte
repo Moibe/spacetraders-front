@@ -10,8 +10,16 @@
 	// Refresca solo re-corriendo el mismo load() de +page.ts (via su `depends`),
 	// asi el fetch vive en un solo lugar. Los $effect corren solo en el cliente,
 	// asi que ninguno de estos timers se arma durante el SSR.
-	let lastUpdated = $state(new Date());
-	let now = $state(Date.now());
+	//
+	// lastUpdated/now arrancan en null (no new Date()/Date.now() aqui arriba):
+	// este bloque de script SI corre durante el SSR, y si el valor inicial
+	// fuera "la hora de ahorita" saldria distinto en el servidor vs. al
+	// hidratar en el cliente (milisegundos despues) -- eso disparaba un
+	// warning de hydration_mismatch. Con null, el primer render coincide en
+	// ambos lados, y el reloj real solo se pone adentro de un $effect
+	// (client-only).
+	let lastUpdated = $state<Date | null>(null);
+	let now = $state<number | null>(null);
 
 	$effect(() => {
 		const id = setInterval(() => invalidate('app:leaderboard'), REFRESH_MS);
@@ -21,6 +29,7 @@
 	// Solo mueve el reloj visual del contador -- el refresco real de datos no
 	// depende de este timer, por eso van separados.
 	$effect(() => {
+		now = Date.now();
 		const id = setInterval(() => {
 			now = Date.now();
 		}, 1000);
@@ -32,11 +41,40 @@
 		lastUpdated = new Date();
 	});
 
+	// Cuanto subieron los creditos de cada agente desde la revision anterior.
+	// previousCredits es un `let` comun (no $state): solo es memoria interna
+	// del efecto, nunca se lee en el template, asi que no necesita ser
+	// reactivo -- y de paso evita que leerlo+escribirlo en el mismo efecto
+	// lo haga dispararse a si mismo en loop.
+	let previousCredits: Record<string, number> = {};
+	let deltas = $state<Record<string, number>>({});
+
+	$effect(() => {
+		if (!data.status) return;
+		const current: Record<string, number> = {};
+		for (const entry of data.status.leaderboards.mostCredits) {
+			current[entry.agentSymbol] = entry.credits;
+		}
+
+		const nuevosDeltas: Record<string, number> = {};
+		for (const [symbol, credits] of Object.entries(current)) {
+			const previo = previousCredits[symbol];
+			if (previo !== undefined && credits > previo) {
+				nuevosDeltas[symbol] = credits - previo;
+			}
+		}
+
+		deltas = nuevosDeltas;
+		previousCredits = current;
+	});
+
 	// Derivado de lastUpdated + now en vez de su propio contador independiente,
 	// para que nunca se desincronice del refresco real (aunque el navegador
 	// pause el timer un rato al estar la pestana en background, por ejemplo).
 	const secondsLeft = $derived(
-		Math.max(0, REFRESH_S - Math.floor((now - lastUpdated.getTime()) / 1000))
+		now !== null && lastUpdated
+			? Math.max(0, REFRESH_S - Math.floor((now - lastUpdated.getTime()) / 1000))
+			: REFRESH_S
 	);
 
 	const fmt = (n: number) => n.toLocaleString('es-MX');
@@ -79,7 +117,9 @@
 				data.status.stats.systems
 			)} sistemas
 		</p>
-		<p class="refresh">actualizado {lastUpdated.toLocaleTimeString('es-MX')}</p>
+		{#if lastUpdated}
+			<p class="refresh">actualizado {lastUpdated.toLocaleTimeString('es-MX')}</p>
+		{/if}
 
 		<table>
 			<thead>
@@ -94,7 +134,12 @@
 					<tr class:you={data.agent && entry.agentSymbol === data.agent.symbol}>
 						<td>{i + 1}</td>
 						<td>{entry.agentSymbol}</td>
-						<td>{fmt(entry.credits)}</td>
+						<td>
+							{fmt(entry.credits)}
+							{#if deltas[entry.agentSymbol]}
+								<span class="delta">▲ {fmt(deltas[entry.agentSymbol])}</span>
+							{/if}
+						</td>
 					</tr>
 				{/each}
 			</tbody>
@@ -188,6 +233,15 @@
 	tr.you {
 		background: rgba(17, 17, 17, 0.06);
 		font-weight: 700;
+	}
+
+	.delta {
+		display: inline-block;
+		margin-left: 0.4rem;
+		font-size: 0.7rem;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+		color: #15803d;
 	}
 
 	.note {
