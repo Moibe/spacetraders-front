@@ -1,8 +1,11 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
+	import { _DELTA_WINDOW_S } from './+page';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const deltaMinutos = _DELTA_WINDOW_S / 60;
 
 	const REFRESH_MS = 30_000;
 	const REFRESH_S = REFRESH_MS / 1000;
@@ -132,7 +135,9 @@
 						<td>
 							{fmt(entry.credits)}
 							{#if deltas[entry.agentSymbol]}
-								<span class="delta">▲ {fmt(deltas[entry.agentSymbol])}</span>
+								<span class="delta" title="En los últimos {deltaMinutos} minutos">
+									▲ {fmt(deltas[entry.agentSymbol])}
+								</span>
 							{/if}
 						</td>
 					</tr>
@@ -140,6 +145,7 @@
 			</tbody>
 		</table>
 		<p class="note">Solo el top 15 -- la API del juego no expone la lista completa.</p>
+		<p class="note">▲ = subió en los últimos {deltaMinutos} minutos.</p>
 
 		{#if data.agent}
 			<p class="you-note">
