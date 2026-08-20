@@ -39,6 +39,9 @@
   </a>
 
   <nav>
+    <a href="/agent" class="nav-item" aria-current={isActive('/agent') ? 'page' : undefined}>
+      Agente
+    </a>
     <a
       href="/leaderboards"
       class="nav-item"
