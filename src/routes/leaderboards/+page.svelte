@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
-	import { _DELTA_WINDOW_S } from './+page';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	const deltaMinutos = _DELTA_WINDOW_S / 60;
-
 	const REFRESH_MS = 30_000;
+	const REFRESH_S = REFRESH_MS / 1000;
 
 	// Refresca solo re-corriendo el mismo load() de +page.ts (via su `depends`),
 	// asi el fetch vive en un solo lugar. Los $effect corren solo en el cliente,
@@ -43,37 +41,25 @@
 		lastUpdated = new Date();
 	});
 
-	// Cuanto subieron los creditos de cada agente desde la revision anterior.
-	// Se deriva de data.previousBatch (el snapshot mas reciente persistido en
-	// el backend), no de un $state propio de esta pestana -- asi el delta
-	// sobrevive un reload de la pagina en vez de perderse.
-	const deltas = $derived.by(() => {
-		if (!data.status || !data.previousBatch) return {} as Record<string, number>;
+	// El ultimo incremento observado por agente ya viene calculado del
+	// backend (persistido, no de memoria de esta pestana): data.deltas es
+	// { agentSymbol: { delta, observedAt } }. Se queda "pegado" hasta que se
+	// observe uno nuevo, en vez de desaparecer cuando pasa una ventana fija.
+	function haceTiempo(iso: string, ahoraMs: number): string {
+		const segundos = Math.max(0, Math.round((ahoraMs - new Date(iso).getTime()) / 1000));
+		if (segundos < 60) return `hace ${segundos}s`;
+		const minutos = Math.round(segundos / 60);
+		if (minutos < 60) return `hace ${minutos} min`;
+		return `hace ${Math.round(minutos / 60)}h`;
+	}
 
-		const previo: Record<string, number> = {};
-		for (const e of data.previousBatch.entries as { agentSymbol: string; credits: number }[]) {
-			previo[e.agentSymbol] = e.credits;
-		}
-
-		const resultado: Record<string, number> = {};
-		for (const entry of data.status.leaderboards.mostCredits) {
-			const antes = previo[entry.agentSymbol];
-			if (antes !== undefined && entry.credits > antes) {
-				resultado[entry.agentSymbol] = entry.credits - antes;
-			}
-		}
-		return resultado;
-	});
-
-	// Progreso del "pastel": ciclo de _DELTA_WINDOW_S alineado al reloj de
-	// pared (no a cuando cargaste la pagina), asi es el mismo para cualquiera
-	// que la tenga abierta y se resetea siempre en el mismo segundo real --
-	// igual que el propio corte de 5 minutos que usa el backend para el delta.
-	const segundosEnElCiclo = $derived(
-		now !== null ? Math.floor(now / 1000) % _DELTA_WINDOW_S : 0
-	);
+	// Progreso del "pastel": ciclo de REFRESH_S alineado al reloj de pared
+	// (no a cuando cargaste la pagina), asi es el mismo para cualquiera que
+	// la tenga abierta y se resetea siempre en el mismo segundo real -- osea,
+	// cuanto falta para el proximo refresco de datos (30s).
+	const segundosEnElCiclo = $derived(now !== null ? Math.floor(now / 1000) % REFRESH_S : 0);
 	const porcentajeRestante = $derived(
-		now !== null ? ((_DELTA_WINDOW_S - segundosEnElCiclo) / _DELTA_WINDOW_S) * 100 : 100
+		now !== null ? ((REFRESH_S - segundosEnElCiclo) / REFRESH_S) * 100 : 100
 	);
 
 	const fmt = (n: number) => n.toLocaleString('es-MX');
@@ -102,8 +88,8 @@
 			class="pie"
 			style="--pct: {porcentajeRestante}%"
 			role="img"
-			aria-label="{Math.ceil(_DELTA_WINDOW_S - segundosEnElCiclo)} segundos para el próximo corte de {deltaMinutos} minutos"
-			title="{Math.ceil(_DELTA_WINDOW_S - segundosEnElCiclo)}s para el próximo corte de {deltaMinutos} min"
+			aria-label="{Math.ceil(REFRESH_S - segundosEnElCiclo)} segundos para el próximo refresco"
+			title="{Math.ceil(REFRESH_S - segundosEnElCiclo)}s para el próximo refresco"
 		></div>
 	</div>
 
@@ -139,9 +125,14 @@
 						<td>{entry.agentSymbol}</td>
 						<td>
 							{fmt(entry.credits)}
-							{#if deltas[entry.agentSymbol]}
-								<span class="delta" title="En los últimos {deltaMinutos} minutos">
-									▲ {fmt(deltas[entry.agentSymbol])}
+							{#if data.deltas?.[entry.agentSymbol]}
+								<span
+									class="delta"
+									title={now !== null
+										? `Observado ${haceTiempo(data.deltas[entry.agentSymbol].observedAt, now)}`
+										: undefined}
+								>
+									▲ {fmt(data.deltas[entry.agentSymbol].delta)}
 								</span>
 							{/if}
 						</td>
@@ -150,7 +141,7 @@
 			</tbody>
 		</table>
 		<p class="note">Solo el top 15 -- la API del juego no expone la lista completa.</p>
-		<p class="note">▲ = subió en los últimos {deltaMinutos} minutos.</p>
+		<p class="note">▲ = último incremento observado (se queda hasta que se vea uno nuevo).</p>
 
 		{#if data.agent}
 			<p class="you-note">
