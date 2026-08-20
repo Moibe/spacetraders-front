@@ -42,30 +42,25 @@
 	});
 
 	// Cuanto subieron los creditos de cada agente desde la revision anterior.
-	// previousCredits es un `let` comun (no $state): solo es memoria interna
-	// del efecto, nunca se lee en el template, asi que no necesita ser
-	// reactivo -- y de paso evita que leerlo+escribirlo en el mismo efecto
-	// lo haga dispararse a si mismo en loop.
-	let previousCredits: Record<string, number> = {};
-	let deltas = $state<Record<string, number>>({});
+	// Se deriva de data.previousBatch (el snapshot mas reciente persistido en
+	// el backend), no de un $state propio de esta pestana -- asi el delta
+	// sobrevive un reload de la pagina en vez de perderse.
+	const deltas = $derived.by(() => {
+		if (!data.status || !data.previousBatch) return {} as Record<string, number>;
 
-	$effect(() => {
-		if (!data.status) return;
-		const current: Record<string, number> = {};
-		for (const entry of data.status.leaderboards.mostCredits) {
-			current[entry.agentSymbol] = entry.credits;
+		const previo: Record<string, number> = {};
+		for (const e of data.previousBatch.entries as { agentSymbol: string; credits: number }[]) {
+			previo[e.agentSymbol] = e.credits;
 		}
 
-		const nuevosDeltas: Record<string, number> = {};
-		for (const [symbol, credits] of Object.entries(current)) {
-			const previo = previousCredits[symbol];
-			if (previo !== undefined && credits > previo) {
-				nuevosDeltas[symbol] = credits - previo;
+		const resultado: Record<string, number> = {};
+		for (const entry of data.status.leaderboards.mostCredits) {
+			const antes = previo[entry.agentSymbol];
+			if (antes !== undefined && entry.credits > antes) {
+				resultado[entry.agentSymbol] = entry.credits - antes;
 			}
 		}
-
-		deltas = nuevosDeltas;
-		previousCredits = current;
+		return resultado;
 	});
 
 	// Derivado de lastUpdated + now en vez de su propio contador independiente,
