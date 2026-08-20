@@ -49,6 +49,13 @@
     >
       Leaderboards
     </a>
+    <a
+      href="/waypoints"
+      class="nav-item"
+      aria-current={isActive('/waypoints') ? 'page' : undefined}
+    >
+      Ubicaciones
+    </a>
   </nav>
 
   <div class="spacer"></div>
