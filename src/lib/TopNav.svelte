@@ -4,6 +4,10 @@
   // (el glow del original solo funciona sobre fondos oscuros).
   // Se calcula la posición relativa del cursor (-1..1 en cada eje) y la barra
   // se inclina suavemente hacia él; vuelve a plano al salir (transition).
+  import { page } from '$app/state';
+
+  const isActive = (href: string) => page.url.pathname === href;
+
   let tiltX = $state(0);
   let tiltY = $state(0);
 
@@ -35,8 +39,14 @@
   </a>
 
   <nav>
-    <a href="/" class="nav-item" aria-current="page">Inicio</a>
-    <a href="/" class="nav-item">Sección</a>
+    <a href="/" class="nav-item" aria-current={isActive('/') ? 'page' : undefined}>Inicio</a>
+    <a
+      href="/leaderboards"
+      class="nav-item"
+      aria-current={isActive('/leaderboards') ? 'page' : undefined}
+    >
+      Leaderboards
+    </a>
   </nav>
 
   <div class="spacer"></div>
