@@ -39,7 +39,6 @@
   </a>
 
   <nav>
-    <a href="/" class="nav-item" aria-current={isActive('/') ? 'page' : undefined}>Inicio</a>
     <a
       href="/leaderboards"
       class="nav-item"

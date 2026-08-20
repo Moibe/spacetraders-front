@@ -51,20 +51,7 @@
     onmousemove={handleMove}
     onmouseleave={handleLeave}
   >
-    <nav>
-      <a href="/" class="nav-item" aria-current="page">
-        <span class="nav-ico" aria-hidden="true"></span>
-        <span>Sección uno</span>
-      </a>
-      <a href="/" class="nav-item">
-        <span class="nav-ico" aria-hidden="true"></span>
-        <span>Sección dos</span>
-      </a>
-      <a href="/" class="nav-item">
-        <span class="nav-ico" aria-hidden="true"></span>
-        <span>Sección tres</span>
-      </a>
-    </nav>
+    <nav></nav>
 
     <div class="sidebar-footer">
       <button
