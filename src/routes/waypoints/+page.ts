@@ -19,9 +19,14 @@ export const load: PageLoad = async ({ fetch }) => {
 	const agent = await agentRes.json();
 	const system = systemOf(agent.headquarters);
 
-	const waypointsRes = await fetch(`${base}/api/systems/${system}/waypoints`);
+	const [waypointsRes, shipsRes] = await Promise.all([
+		fetch(`${base}/api/systems/${system}/waypoints`),
+		fetch(`${base}/api/ships`)
+	]);
+
 	return {
 		system,
-		waypoints: waypointsRes.ok ? await waypointsRes.json() : []
+		waypoints: waypointsRes.ok ? await waypointsRes.json() : [],
+		ships: shipsRes.ok ? await shipsRes.json() : []
 	};
 };

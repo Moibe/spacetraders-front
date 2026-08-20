@@ -8,6 +8,16 @@
 	// sin resaltar.
 	const DESTACADOS = new Set(['MARKETPLACE', 'SHIPYARD']);
 
+	// Que naves propias hay en cada waypoint, para poner el icono. Un mismo
+	// waypoint puede tener mas de una nave (ej. dos atracadas en la base).
+	const navesPorWaypoint = $derived.by(() => {
+		const mapa: Record<string, string[]> = {};
+		for (const nave of data.ships as { symbol: string; nav: { waypointSymbol: string } }[]) {
+			(mapa[nave.nav.waypointSymbol] ??= []).push(nave.symbol);
+		}
+		return mapa;
+	});
+
 	let filtro = $state('');
 
 	const waypointsFiltrados = $derived.by(() => {
@@ -53,8 +63,17 @@
 			</thead>
 			<tbody>
 				{#each waypointsFiltrados as w (w.symbol)}
-					<tr>
-						<td>{w.symbol}</td>
+					<tr class:aqui={navesPorWaypoint[w.symbol]}>
+						<td class="symbol-cell">
+							{#if navesPorWaypoint[w.symbol]}
+								<span class="ship-icon" title={navesPorWaypoint[w.symbol].join(', ')}>
+									<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+										<path d="M12 2 19 20 12 16 5 20Z" />
+									</svg>
+								</span>
+							{/if}
+							{w.symbol}
+						</td>
 						<td>{w.type}</td>
 						<td class="traits">
 							{#each w.traits as t (t.symbol)}
@@ -137,6 +156,29 @@
 
 	td {
 		font-size: 0.88rem;
+	}
+
+	.symbol-cell {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.ship-icon {
+		display: inline-flex;
+		flex-shrink: 0;
+		width: 15px;
+		height: 15px;
+		color: #92600a;
+	}
+
+	.ship-icon svg {
+		width: 100%;
+		height: 100%;
+	}
+
+	tr.aqui {
+		background: rgba(180, 130, 0, 0.1);
 	}
 
 	.traits {
