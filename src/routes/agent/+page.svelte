@@ -1,8 +1,14 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
+	import { env } from '$env/dynamic/public';
 	import { invalidate } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	// Mismo base que usan los +page.ts -- aca hace falta ademas para las
+	// acciones de escritura (negociar/aceptar), que no pasan por `load`.
+	const base = env.PUBLIC_API_URL ?? 'http://localhost:8010';
 
 	const REFRESH_MS = 30_000;
 
@@ -39,6 +45,67 @@
 		if (c.fulfilled) return { clave: 'cumplido', label: 'Cumplido' };
 		if (c.accepted) return { clave: 'aceptado', label: 'Aceptado' };
 		return { clave: 'ofrecido', label: 'Ofrecido' };
+	}
+
+	// -------------------------------------------------------- acciones (escritura)
+	// Primera parte del sitio que cambia el estado real del juego, no solo lo
+	// muestra. Manuales a proposito: el usuario elige la nave y confirma cada
+	// paso, nada se negocia o acepta solo.
+
+	type ShipLite = { symbol: string; nav: { status: string } };
+
+	const navesAtracadas = $derived(
+		(data.ships as ShipLite[]).filter((n) => n.nav.status === 'DOCKED')
+	);
+
+	let naveNegociando = $state<string | null>(null);
+	$effect(() => {
+		// untrack: guard de default, no debe volver a este efecto por su propia escritura.
+		if (navesAtracadas.length === 0 || untrack(() => naveNegociando) !== null) return;
+		naveNegociando = navesAtracadas[0].symbol;
+	});
+
+	let negociando = $state(false);
+	let errorNegociar = $state<string | null>(null);
+
+	async function mensajeDeError(res: Response): Promise<string> {
+		const cuerpo = await res.json().catch(() => null);
+		return cuerpo?.detail ?? `Error ${res.status}`;
+	}
+
+	async function negociarContrato() {
+		if (!naveNegociando) return;
+		negociando = true;
+		errorNegociar = null;
+		try {
+			const res = await fetch(
+				`${base}/api/contracts/negotiate?ship_symbol=${encodeURIComponent(naveNegociando)}`,
+				{ method: 'POST' }
+			);
+			if (!res.ok) throw new Error(await mensajeDeError(res));
+			await invalidate('app:agent');
+		} catch (e) {
+			errorNegociar = e instanceof Error ? e.message : 'Error desconocido';
+		} finally {
+			negociando = false;
+		}
+	}
+
+	let aceptandoId = $state<string | null>(null);
+	let errorAceptar = $state<{ id: string; mensaje: string } | null>(null);
+
+	async function aceptarContrato(id: string) {
+		aceptandoId = id;
+		errorAceptar = null;
+		try {
+			const res = await fetch(`${base}/api/contracts/${id}/accept`, { method: 'POST' });
+			if (!res.ok) throw new Error(await mensajeDeError(res));
+			await invalidate('app:agent');
+		} catch (e) {
+			errorAceptar = { id, mensaje: e instanceof Error ? e.message : 'Error desconocido' };
+		} finally {
+			aceptandoId = null;
+		}
 	}
 </script>
 
@@ -138,6 +205,28 @@
 		{/if}
 
 		<h2>Tus contratos</h2>
+
+		{#if navesAtracadas.length > 0}
+			<div class="accion-row">
+				<label class="ref-label">
+					Negociar contrato nuevo con
+					<select class="ref-select" bind:value={naveNegociando}>
+						{#each navesAtracadas as nave (nave.symbol)}
+							<option value={nave.symbol}>{nave.symbol}</option>
+						{/each}
+					</select>
+				</label>
+				<button type="button" class="btn" onclick={negociarContrato} disabled={negociando}>
+					{negociando ? 'Negociando…' : 'Negociar'}
+				</button>
+			</div>
+			{#if errorNegociar}
+				<p class="error action-error">{errorNegociar}</p>
+			{/if}
+		{:else}
+			<p class="note">Necesitas una nave atracada para negociar un contrato nuevo.</p>
+		{/if}
+
 		{#if data.contracts.length === 0}
 			<p class="note">Sin contratos todavía.</p>
 		{:else}
@@ -153,7 +242,13 @@
 							contrato.terms.payment.onFulfilled
 						)} al cumplir
 					</p>
-					<p class="line">Vence {new Date(contrato.terms.deadline).toLocaleString('es-MX')}</p>
+					{#if !contrato.accepted && contrato.deadlineToAccept}
+						<p class="line">
+							Vence para aceptar {new Date(contrato.deadlineToAccept).toLocaleString('es-MX')}
+						</p>
+					{:else}
+						<p class="line">Vence {new Date(contrato.terms.deadline).toLocaleString('es-MX')}</p>
+					{/if}
 					{#if contrato.terms.deliver}
 						<ul class="mini-list">
 							{#each contrato.terms.deliver as entrega (entrega.tradeSymbol + entrega.destinationSymbol)}
@@ -163,6 +258,19 @@
 								</li>
 							{/each}
 						</ul>
+					{/if}
+					{#if !contrato.accepted}
+						<button
+							type="button"
+							class="btn"
+							onclick={() => aceptarContrato(contrato.id)}
+							disabled={aceptandoId === contrato.id}
+						>
+							{aceptandoId === contrato.id ? 'Aceptando…' : 'Aceptar contrato'}
+						</button>
+						{#if errorAceptar && errorAceptar.id === contrato.id}
+							<p class="error action-error">{errorAceptar.mensaje}</p>
+						{/if}
 					{/if}
 				</div>
 			{/each}
@@ -253,6 +361,71 @@
 		margin: 0.5rem 0 0;
 		font-size: 0.75rem;
 		color: var(--sw-text-muted);
+	}
+
+	.accion-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 0.6rem;
+	}
+
+	.ref-label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		color: var(--sw-text-muted);
+		white-space: nowrap;
+	}
+
+	.ref-select {
+		padding: 0.35rem 0.6rem;
+		border-radius: 4px;
+		border: 1px solid var(--sw-blue-dim);
+		background: var(--sw-panel-raised);
+		color: var(--sw-text);
+		font-size: 0.85rem;
+		font-family: inherit;
+	}
+
+	.btn {
+		padding: 0.4rem 0.9rem;
+		border-radius: 4px;
+		border: 1px solid var(--sw-blue);
+		background: var(--sw-blue-faint);
+		color: var(--sw-blue);
+		font-size: 0.85rem;
+		font-weight: 700;
+		font-family: inherit;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			opacity 0.15s ease;
+	}
+
+	.btn:hover:not(:disabled) {
+		background: rgba(90, 200, 250, 0.28);
+	}
+
+	.btn:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	.action-error {
+		margin: 0.3rem 0 0.6rem;
+	}
+
+	.card .btn {
+		margin-top: 0.5rem;
+	}
+
+	.card .action-error {
+		margin-bottom: 0;
 	}
 
 	.card {
