@@ -1,4 +1,5 @@
 <script lang="ts">
+	import StarCard from '$lib/StarCard.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -112,6 +113,8 @@
 			{data.waypoints.length} waypoints, posición real dentro del sistema (coordenadas x/y del
 			juego).
 		</p>
+
+		<StarCard system={data.system} systemInfo={data.systemInfo} />
 
 		<div class="legend">
 			{#each Object.keys(COLOR) as cat (cat)}

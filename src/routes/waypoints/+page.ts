@@ -14,7 +14,7 @@ export const load: PageLoad = async ({ fetch }) => {
 	// que siga siendo correcto si algun dia cambia (otro reset, otro agente).
 	const agentRes = await fetch(`${base}/api/agent`);
 	if (!agentRes.ok) {
-		return { system: null, waypoints: [] };
+		return { system: null, systemInfo: null, waypoints: [] };
 	}
 	const agent = await agentRes.json();
 	const system = systemOf(agent.headquarters);
