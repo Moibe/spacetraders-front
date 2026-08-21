@@ -158,23 +158,27 @@
 <style>
 	.waypoints-page {
 		padding: 0.5rem 0.25rem;
-		color: #111111;
+		color: var(--sw-text);
 	}
 
 	h1 {
 		margin: 0 0 0.5rem;
 		font-size: 1.4rem;
+		color: var(--sw-blue);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		text-shadow: 0 0 6px rgba(90, 200, 250, 0.35);
 	}
 
 	.system {
 		font-weight: 400;
-		color: rgba(17, 17, 17, 0.55);
+		color: var(--sw-text-muted);
 	}
 
 	.meta {
 		margin: 0.25rem 0 0.75rem;
 		font-size: 0.9rem;
-		color: rgba(17, 17, 17, 0.7);
+		color: var(--sw-text-muted);
 	}
 
 	.controles {
@@ -189,17 +193,18 @@
 		flex: 1 1 260px;
 		max-width: 360px;
 		padding: 0.5rem 0.75rem;
-		border-radius: 8px;
-		border: 1px solid rgba(17, 17, 17, 0.2);
-		background: rgba(255, 255, 255, 0.55);
-		color: #111111;
+		border-radius: 4px;
+		border: 1px solid var(--sw-blue-dim);
+		background: var(--sw-panel-raised);
+		color: var(--sw-text);
 		font-size: 0.9rem;
+		font-family: inherit;
 	}
 
 	.filtro:focus {
 		outline: none;
-		border-color: rgba(17, 17, 17, 0.4);
-		background: rgba(255, 255, 255, 0.75);
+		border-color: var(--sw-blue);
+		box-shadow: 0 0 0 2px var(--sw-blue-faint);
 	}
 
 	.ref-label {
@@ -207,17 +212,18 @@
 		align-items: center;
 		gap: 0.5rem;
 		font-size: 0.85rem;
-		color: rgba(17, 17, 17, 0.7);
+		color: var(--sw-text-muted);
 		white-space: nowrap;
 	}
 
 	.ref-select {
 		padding: 0.35rem 0.6rem;
-		border-radius: 8px;
-		border: 1px solid rgba(17, 17, 17, 0.2);
-		background: rgba(255, 255, 255, 0.55);
-		color: #111111;
+		border-radius: 4px;
+		border: 1px solid var(--sw-blue-dim);
+		background: var(--sw-panel-raised);
+		color: var(--sw-text);
 		font-size: 0.85rem;
+		font-family: inherit;
 	}
 
 	.distancia {
@@ -233,13 +239,13 @@
 	td {
 		text-align: left;
 		padding: 0.5rem 0.75rem;
-		border-bottom: 1px solid rgba(17, 17, 17, 0.1);
+		border-bottom: 1px solid rgba(90, 200, 250, 0.15);
 		vertical-align: top;
 	}
 
 	th {
 		font-weight: 600;
-		color: rgba(17, 17, 17, 0.6);
+		color: var(--sw-text-muted);
 		font-size: 0.8rem;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
@@ -260,7 +266,8 @@
 		flex-shrink: 0;
 		width: 15px;
 		height: 15px;
-		color: #92600a;
+		color: var(--sw-amber);
+		filter: drop-shadow(0 0 3px rgba(255, 176, 0, 0.6));
 	}
 
 	.ship-icon svg {
@@ -269,7 +276,7 @@
 	}
 
 	tr.aqui {
-		background: rgba(180, 130, 0, 0.1);
+		background: rgba(255, 176, 0, 0.1);
 	}
 
 	.traits {
@@ -283,24 +290,26 @@
 		font-size: 0.72rem;
 		padding: 0.12rem 0.5rem;
 		border-radius: 999px;
-		background: rgba(17, 17, 17, 0.08);
-		color: rgba(17, 17, 17, 0.65);
+		background: var(--sw-panel-raised);
+		border: 1px solid var(--sw-blue-dim);
+		color: var(--sw-text-muted);
 		white-space: nowrap;
 	}
 
 	.trait.destacado {
-		background: #111111;
-		color: #ffe066;
+		background: rgba(255, 176, 0, 0.18);
+		border-color: rgba(255, 176, 0, 0.5);
+		color: var(--sw-amber);
 		font-weight: 700;
 	}
 
 	.note {
 		font-size: 0.85rem;
-		color: rgba(17, 17, 17, 0.55);
+		color: var(--sw-text-muted);
 	}
 
 	.error {
-		color: #b91c1c;
+		color: var(--sw-red);
 		font-weight: 600;
 	}
 </style>

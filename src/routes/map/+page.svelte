@@ -17,11 +17,14 @@
 	// puede quedar lado a lado, no solo los vecinos). Los primeros 3 slots del
 	// tema por default son los unicos que pasan all-pairs en ambos modos --
 	// por eso son exactamente 3 categorias, no una por cada uno de los 9
-	// "type" que trae la API (eso hubiera fallado la separacion CVD).
+	// "type" que trae la API (eso hubiera fallado la separacion CVD). Re-
+	// validados contra el fondo oscuro nuevo (surface #0a1420, --pairs all,
+	// ambos pisos CVD/vision normal limpios) al pasar el mapa al tema Star
+	// Wars -- estos hex NO son los mismos que en el fondo claro original.
 	const COLOR: Record<string, string> = {
-		asteroide: '#2a78d6', // slot 1 (blue)
-		cuerpo: '#eb6834', // slot 2 (orange)
-		estructura: '#1baf7a' // slot 3 (aqua)
+		asteroide: '#3987e5', // slot 1 (blue)
+		cuerpo: '#d95926', // slot 2 (orange)
+		estructura: '#199e70' // slot 3 (aqua)
 	};
 	const LABEL: Record<string, string> = {
 		asteroide: 'Asteroide',
@@ -215,23 +218,27 @@
 <style>
 	.map-page {
 		padding: 0.5rem 0.25rem;
-		color: #111111;
+		color: var(--sw-text);
 	}
 
 	h1 {
 		margin: 0 0 0.5rem;
 		font-size: 1.4rem;
+		color: var(--sw-blue);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		text-shadow: 0 0 6px rgba(90, 200, 250, 0.35);
 	}
 
 	.system {
 		font-weight: 400;
-		color: rgba(17, 17, 17, 0.55);
+		color: var(--sw-text-muted);
 	}
 
 	.meta {
 		margin: 0.25rem 0 0.75rem;
 		font-size: 0.9rem;
-		color: rgba(17, 17, 17, 0.7);
+		color: var(--sw-text-muted);
 	}
 
 	.legend {
@@ -240,7 +247,7 @@
 		gap: 0.9rem;
 		margin-bottom: 0.75rem;
 		font-size: 0.82rem;
-		color: rgba(17, 17, 17, 0.75);
+		color: var(--sw-text-muted);
 	}
 
 	.legend-item {
@@ -264,7 +271,7 @@
 	.legend-ship {
 		width: 12px;
 		height: 12px;
-		color: #92600a;
+		color: var(--sw-amber);
 		flex-shrink: 0;
 	}
 
@@ -273,21 +280,22 @@
 		max-width: 640px;
 		aspect-ratio: 1;
 		display: block;
-		border-radius: 12px;
-		border: 1px solid rgba(17, 17, 17, 0.1);
+		border-radius: 6px;
+		border: 1px solid var(--sw-blue-dim);
+		box-shadow: 0 0 16px rgba(90, 200, 250, 0.1);
 	}
 
 	.fondo {
-		fill: #fcfcfb;
+		fill: var(--sw-panel);
 	}
 
 	.eje {
-		stroke: #e1e0d9;
+		stroke: rgba(90, 200, 250, 0.2);
 		stroke-width: 1;
 	}
 
 	.tick {
-		fill: #898781;
+		fill: var(--sw-text-muted);
 		font-size: 11px;
 		font-variant-numeric: tabular-nums;
 	}
@@ -298,42 +306,44 @@
 	}
 
 	.marca {
-		stroke: #fcfcfb;
+		stroke: var(--sw-panel);
 		stroke-width: 2;
 		transition: r 0.12s ease;
 	}
 
 	.marca.activa {
-		stroke: #0b0b0b;
+		stroke: var(--sw-text);
 	}
 
 	.nave-marca {
-		fill: #92600a;
+		fill: var(--sw-amber);
 		pointer-events: none;
 	}
 
 	.tooltip-fondo {
-		fill: #0b0b0b;
+		fill: var(--sw-panel-raised);
+		stroke: var(--sw-blue-dim);
+		stroke-width: 1;
 	}
 
 	.tooltip-texto {
-		fill: #ffffff;
+		fill: var(--sw-text);
 		font-size: 12px;
 	}
 
 	.note {
 		margin-top: 0.6rem;
 		font-size: 0.8rem;
-		color: rgba(17, 17, 17, 0.55);
+		color: var(--sw-text-muted);
 	}
 
 	.note a {
-		color: rgba(17, 17, 17, 0.75);
+		color: var(--sw-blue);
 		font-weight: 600;
 	}
 
 	.error {
-		color: #b91c1c;
+		color: var(--sw-red);
 		font-weight: 600;
 	}
 </style>

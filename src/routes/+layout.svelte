@@ -36,8 +36,27 @@
 </main>
 
 <style>
+  /* Sistema de color "plano tecnico imperial": azul como identidad principal
+     (chrome, bordes, tipografia), ambar/verde/rojo reservados como acentos de
+     estado -- nunca como color de chrome. Ver memoria de referencias Star Wars
+     (ref_star_wars_ui_displays) para las 5 variantes que inspiraron esto. */
   :global(:root) {
     --topnav-height: 64px;
+
+    --sw-bg: #050a10;
+    --sw-panel: #0a1420;
+    --sw-panel-raised: #0e1c2c;
+    --sw-blue: #5ac8fa;
+    --sw-blue-dim: #1b6ea8;
+    --sw-blue-faint: rgba(90, 200, 250, 0.14);
+    --sw-text: #d6ecfb;
+    --sw-text-muted: #7fa8c9;
+
+    /* Acentos de estado -- se usan por significado (ok/advertencia/error),
+       nunca como un cuarto color de chrome. */
+    --sw-green: #3ddc72;
+    --sw-amber: #ffb000;
+    --sw-red: #ff5555;
   }
 
   :global(html, body) {
@@ -48,10 +67,45 @@
 
   :global(body) {
     min-height: 100vh;
-    background: linear-gradient(135deg, #ffe066 0%, #ffc300 100%);
+    background: var(--sw-bg);
+    background-image:
+      radial-gradient(ellipse 900px 500px at 20% -10%, rgba(90, 200, 250, 0.08), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 110%, rgba(90, 200, 250, 0.06), transparent 60%);
     background-attachment: fixed;
-    color: #111111;
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    color: var(--sw-text);
+    font-family: 'SF Mono', 'Consolas', 'Liberation Mono', Menlo, monospace;
+  }
+
+  /* Rejilla tenue + scanlines sobre todo el fondo -- textura de CRT, siempre
+     detras del contenido (z-index -1) y sin interceptar clicks. */
+  :global(body)::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        rgba(90, 200, 250, 0.05) 0px,
+        rgba(90, 200, 250, 0.05) 1px,
+        transparent 1px,
+        transparent 3px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 63px,
+        rgba(90, 200, 250, 0.05) 63px,
+        rgba(90, 200, 250, 0.05) 64px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 63px,
+        rgba(90, 200, 250, 0.05) 63px,
+        rgba(90, 200, 250, 0.05) 64px
+      );
   }
 
   main {
@@ -60,14 +114,12 @@
     right: 1rem;
     bottom: 1rem;
     box-sizing: border-box;
-    background: rgba(255, 255, 255, 0.32);
-    backdrop-filter: blur(10px) saturate(120%);
-    -webkit-backdrop-filter: blur(10px) saturate(120%);
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    border-radius: 16px;
+    background: var(--sw-panel);
+    border: 1px solid var(--sw-blue-dim);
+    border-radius: 6px;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      0 4px 16px rgba(0, 0, 0, 0.15);
+      inset 0 0 0 1px rgba(90, 200, 250, 0.06),
+      0 0 24px rgba(90, 200, 250, 0.1);
     overflow: hidden;
     transition: left 0.22s ease-out;
     left: calc(var(--sidebar-width, 240px) + 2rem);

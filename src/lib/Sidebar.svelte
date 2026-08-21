@@ -1,8 +1,7 @@
 <script lang="ts">
-  // Barra lateral "de vidrio" con el mismo tilt 3D que la superior, adaptada a
-  // fondo AMARILLO (vidrio esmerilado blanco, letras negras, sin glow). Incluye
-  // el handle para replegar/mostrar. Publica su ancho real a la variable CSS
-  // --sidebar-width para que el panel de contenido se ajuste solo.
+  // Barra lateral estilo "panel de computadora de nave" -- sin tilt de vidrio
+  // (ver TopNav.svelte). Sigue vacia (nada que poner ahi todavia), publica su
+  // ancho real a --sidebar-width para que el panel de contenido se ajuste solo.
   let {
     collapsed = false,
     toggleCollapsed
@@ -11,8 +10,6 @@
     toggleCollapsed: () => void;
   } = $props();
 
-  let tiltX = $state(0);
-  let tiltY = $state(0);
   let sidebarWidth = $state(240);
 
   $effect(() => {
@@ -20,44 +17,17 @@
       document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
     }
   });
-
-  function handleMove(e: MouseEvent) {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-    const MAX = 1.2;
-    tiltX = -ny * MAX;
-    tiltY = nx * MAX;
-  }
-
-  function handleLeave() {
-    tiltX = 0;
-    tiltY = 0;
-  }
-
-  function handleCollapseClick(e: MouseEvent) {
-    e.stopPropagation();
-    tiltX = 0;
-    tiltY = 0;
-    toggleCollapsed();
-  }
 </script>
 
 {#if !collapsed}
-  <aside
-    class="sidebar"
-    style="transform: perspective(900px) rotateX({tiltX}deg) rotateY({tiltY}deg);"
-    bind:clientWidth={sidebarWidth}
-    onmousemove={handleMove}
-    onmouseleave={handleLeave}
-  >
+  <aside class="sidebar" bind:clientWidth={sidebarWidth}>
     <nav></nav>
 
     <div class="sidebar-footer">
       <button
         type="button"
         class="collapse-btn"
-        onclick={handleCollapseClick}
+        onclick={toggleCollapsed}
         aria-label="Replegar barra"
       >
         <svg
@@ -110,16 +80,12 @@
     padding: 1.5rem 1rem;
     display: flex;
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(10px) saturate(120%);
-    -webkit-backdrop-filter: blur(10px) saturate(120%);
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    border-radius: 16px;
+    background: var(--sw-panel);
+    border: 1px solid var(--sw-blue-dim);
+    border-radius: 6px;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      0 4px 16px rgba(0, 0, 0, 0.15);
-    transition: transform 0.18s ease-out;
-    will-change: transform;
+      inset 0 0 0 1px rgba(90, 200, 250, 0.06),
+      0 0 20px rgba(90, 200, 250, 0.1);
     user-select: none;
   }
 
@@ -144,46 +110,40 @@
     justify-content: center;
     margin-top: auto;
     padding-top: 1rem;
-    border-top: 1px solid rgba(17, 17, 17, 0.12);
+    border-top: 1px solid var(--sw-blue-dim);
   }
 
   .collapse-btn,
   .reveal-handle {
-    background: rgba(255, 255, 255, 0.45);
-    border: 1px solid rgba(17, 17, 17, 0.14);
-    border-radius: 8px;
+    background: var(--sw-panel-raised);
+    border: 1px solid var(--sw-blue-dim);
+    border-radius: 4px;
     padding: 0.4rem 0.5rem;
-    color: rgba(17, 17, 17, 0.75);
+    color: var(--sw-text-muted);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font: inherit;
-    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
 
   .collapse-btn:hover,
   .reveal-handle:hover {
-    background: rgba(255, 255, 255, 0.7);
-    border-color: rgba(17, 17, 17, 0.25);
-    color: #000;
+    background: var(--sw-blue-faint);
+    border-color: var(--sw-blue);
+    color: var(--sw-blue);
   }
 
-  /* Cuando la barra está replegada, queda solo este handle flotante de vidrio. */
+  /* Cuando la barra esta replegada, queda solo este handle flotante. */
   .reveal-handle {
     position: fixed;
     left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
     padding: 0.55rem 0.45rem;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(10px) saturate(120%);
-    -webkit-backdrop-filter: blur(10px) saturate(120%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      0 4px 16px rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    box-shadow: 0 0 12px rgba(90, 200, 250, 0.12);
     z-index: 10;
   }
 </style>

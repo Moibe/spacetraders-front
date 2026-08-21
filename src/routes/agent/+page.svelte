@@ -147,17 +147,26 @@
 <style>
 	.agent-page {
 		padding: 0.5rem 0.25rem;
-		color: #111111;
+		color: var(--sw-text);
 	}
 
 	h1 {
 		margin: 0 0 0.75rem;
 		font-size: 1.4rem;
+		color: var(--sw-blue);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		text-shadow: 0 0 6px rgba(90, 200, 250, 0.35);
 	}
 
 	h2 {
 		margin: 1.5rem 0 0.6rem;
+		padding-bottom: 0.35rem;
 		font-size: 1.05rem;
+		color: var(--sw-blue);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		border-bottom: 1px solid var(--sw-blue-dim);
 	}
 
 	.identity {
@@ -167,9 +176,10 @@
 		justify-content: space-between;
 		gap: 1rem;
 		padding: 1rem 1.1rem;
-		border-radius: 12px;
-		background: rgba(255, 255, 255, 0.35);
-		border: 1px solid rgba(255, 255, 255, 0.6);
+		border-radius: 6px;
+		background: var(--sw-panel-raised);
+		border: 1px solid var(--sw-blue-dim);
+		box-shadow: inset 0 0 0 1px rgba(90, 200, 250, 0.06);
 	}
 
 	.identity-main {
@@ -181,11 +191,13 @@
 	.symbol {
 		font-size: 1.3rem;
 		font-weight: 800;
+		color: var(--sw-blue);
+		text-shadow: 0 0 6px rgba(90, 200, 250, 0.35);
 	}
 
 	.faction {
 		font-size: 0.8rem;
-		color: rgba(17, 17, 17, 0.6);
+		color: var(--sw-text-muted);
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 	}
@@ -208,21 +220,21 @@
 
 	.stat-label {
 		font-size: 0.75rem;
-		color: rgba(17, 17, 17, 0.55);
+		color: var(--sw-text-muted);
 	}
 
 	.refresh {
 		margin: 0.5rem 0 0;
 		font-size: 0.75rem;
-		color: rgba(17, 17, 17, 0.5);
+		color: var(--sw-text-muted);
 	}
 
 	.card {
 		padding: 0.85rem 1rem;
 		margin-bottom: 0.6rem;
-		border-radius: 10px;
-		background: rgba(255, 255, 255, 0.25);
-		border: 1px solid rgba(17, 17, 17, 0.1);
+		border-radius: 6px;
+		background: var(--sw-panel-raised);
+		border: 1px solid var(--sw-blue-dim);
 	}
 
 	.card-head {
@@ -238,41 +250,44 @@
 		font-weight: 700;
 		padding: 0.15rem 0.55rem;
 		border-radius: 999px;
-		background: rgba(17, 17, 17, 0.1);
-		color: rgba(17, 17, 17, 0.75);
+		background: var(--sw-blue-faint);
+		color: var(--sw-text-muted);
+		border: 1px solid var(--sw-blue-dim);
 		white-space: nowrap;
 	}
 
 	.badge.estado-cumplido {
-		background: rgba(21, 128, 61, 0.15);
-		color: #15803d;
+		background: rgba(61, 220, 114, 0.15);
+		color: var(--sw-green);
+		border-color: rgba(61, 220, 114, 0.4);
 	}
 
 	.badge.estado-aceptado {
-		background: rgba(180, 130, 0, 0.15);
-		color: #92600a;
+		background: rgba(255, 176, 0, 0.15);
+		color: var(--sw-amber);
+		border-color: rgba(255, 176, 0, 0.4);
 	}
 
 	.line {
 		margin: 0.2rem 0;
 		font-size: 0.9rem;
-		color: rgba(17, 17, 17, 0.85);
+		color: var(--sw-text);
 	}
 
 	.mini-list {
 		margin: 0.4rem 0 0;
 		padding-left: 1.1rem;
 		font-size: 0.85rem;
-		color: rgba(17, 17, 17, 0.75);
+		color: var(--sw-text-muted);
 	}
 
 	.note {
 		font-size: 0.85rem;
-		color: rgba(17, 17, 17, 0.55);
+		color: var(--sw-text-muted);
 	}
 
 	.error {
-		color: #b91c1c;
+		color: var(--sw-red);
 		font-weight: 600;
 	}
 </style>

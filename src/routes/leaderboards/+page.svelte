@@ -164,7 +164,7 @@
 
 	.leaderboard {
 		padding: 0.5rem 0.25rem;
-		color: #111111;
+		color: var(--sw-text);
 	}
 
 	.header-row {
@@ -178,6 +178,10 @@
 	h1 {
 		margin: 0;
 		font-size: 1.4rem;
+		color: var(--sw-blue);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		text-shadow: 0 0 6px rgba(90, 200, 250, 0.35);
 	}
 
 	.pie {
@@ -185,11 +189,12 @@
 		height: 3.25rem;
 		flex-shrink: 0;
 		border-radius: 50%;
-		border: 2px solid rgba(17, 17, 17, 0.25);
+		border: 2px solid var(--sw-blue-dim);
 		background: conic-gradient(
-			rgba(17, 17, 17, 0.65) 0% var(--pct),
-			rgba(17, 17, 17, 0.08) var(--pct) 100%
+			var(--sw-blue) 0% var(--pct),
+			var(--sw-blue-faint) var(--pct) 100%
 		);
+		box-shadow: 0 0 10px rgba(90, 200, 250, 0.25);
 		/* El giro se anima solo: --pct cambia un poco cada segundo (viene de
 		   $derived), así que el navegador interpola el gradiente entre valores. */
 		transition: background 0.3s linear;
@@ -199,13 +204,13 @@
 	.stats {
 		margin: 0.25rem 0;
 		font-size: 0.9rem;
-		color: rgba(17, 17, 17, 0.7);
+		color: var(--sw-text-muted);
 	}
 
 	.refresh {
 		margin: 0.5rem 0 0;
 		font-size: 0.75rem;
-		color: rgba(17, 17, 17, 0.5);
+		color: var(--sw-text-muted);
 	}
 
 	table {
@@ -219,12 +224,12 @@
 	td {
 		text-align: left;
 		padding: 0.5rem 0.75rem;
-		border-bottom: 1px solid rgba(17, 17, 17, 0.1);
+		border-bottom: 1px solid rgba(90, 200, 250, 0.15);
 	}
 
 	th {
 		font-weight: 600;
-		color: rgba(17, 17, 17, 0.6);
+		color: var(--sw-text-muted);
 		font-size: 0.8rem;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
@@ -236,7 +241,7 @@
 	}
 
 	tr.you {
-		background: rgba(17, 17, 17, 0.06);
+		background: var(--sw-blue-faint);
 		font-weight: 700;
 	}
 
@@ -246,12 +251,12 @@
 		font-size: 0.7rem;
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
-		color: #15803d;
+		color: var(--sw-green);
 	}
 
 	.note {
 		font-size: 0.8rem;
-		color: rgba(17, 17, 17, 0.55);
+		color: var(--sw-text-muted);
 	}
 
 	.you-note {
@@ -260,7 +265,7 @@
 	}
 
 	.error {
-		color: #b91c1c;
+		color: var(--sw-red);
 		font-weight: 600;
 	}
 </style>
