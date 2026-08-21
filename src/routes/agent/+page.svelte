@@ -79,6 +79,32 @@
 			<p class="refresh">actualizado {lastUpdated.toLocaleTimeString('es-MX')}</p>
 		{/if}
 
+		<h2>Tu facción</h2>
+		{#if data.faction}
+			<div class="faction-card">
+				<span class="faction-emblem" aria-hidden="true">{data.faction.name.charAt(0)}</span>
+				<div class="faction-body">
+					<div class="faction-head">
+						<strong class="faction-name">{data.faction.name}</strong>
+						<span class="badge">{data.faction.isRecruiting ? 'Reclutando' : 'No recluta'}</span>
+					</div>
+					<p class="line">{data.faction.description}</p>
+					{#if data.faction.headquarters}
+						<p class="note">Sede en <strong>{data.faction.headquarters}</strong></p>
+					{/if}
+					{#if data.faction.traits?.length > 0}
+						<ul class="faction-traits">
+							{#each data.faction.traits as t (t.symbol)}
+								<li class="faction-trait" title={t.description}>{t.name}</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
+			</div>
+		{:else}
+			<p class="note">No se pudo cargar la información de la facción.</p>
+		{/if}
+
 		<h2>Tu flota</h2>
 		{#if data.ships.length === 0}
 			<p class="note">Sin naves.</p>
@@ -235,6 +261,71 @@
 		border-radius: 6px;
 		background: var(--sw-panel-raised);
 		border: 1px solid var(--sw-blue-dim);
+	}
+
+	/* La API de SpaceTraders no trae logo/artwork de facciones -- el emblema
+	   es un monograma generado (misma idea que .brand-mark en TopNav), no un
+	   logo oficial del juego. */
+	.faction-card {
+		display: flex;
+		gap: 0.85rem;
+		padding: 0.85rem 1rem;
+		margin-bottom: 0.6rem;
+		border-radius: 6px;
+		background: var(--sw-panel-raised);
+		border: 1px solid var(--sw-blue-dim);
+	}
+
+	.faction-emblem {
+		flex-shrink: 0;
+		width: 2.4rem;
+		height: 2.4rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid var(--sw-blue);
+		border-radius: 6px;
+		box-shadow: 0 0 8px rgba(90, 200, 250, 0.4);
+		font-size: 1.1rem;
+		font-weight: 800;
+		color: var(--sw-blue);
+		text-shadow: 0 0 6px rgba(90, 200, 250, 0.45);
+	}
+
+	.faction-body {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.faction-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-bottom: 0.3rem;
+	}
+
+	.faction-name {
+		font-size: 0.95rem;
+	}
+
+	.faction-traits {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+		margin: 0.4rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.faction-trait {
+		font-size: 0.72rem;
+		padding: 0.12rem 0.5rem;
+		border-radius: 999px;
+		background: var(--sw-blue-faint);
+		border: 1px solid var(--sw-blue-dim);
+		color: var(--sw-text-muted);
+		white-space: nowrap;
 	}
 
 	.card-head {
