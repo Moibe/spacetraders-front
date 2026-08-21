@@ -19,6 +19,13 @@
       Agente
     </a>
     <a
+      href="/contracts"
+      class="nav-item"
+      aria-current={isActive('/contracts') ? 'page' : undefined}
+    >
+      Contratos
+    </a>
+    <a
       href="/leaderboards"
       class="nav-item"
       aria-current={isActive('/leaderboards') ? 'page' : undefined}

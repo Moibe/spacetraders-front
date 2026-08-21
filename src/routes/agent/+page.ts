@@ -12,20 +12,18 @@ export const load: PageLoad = async ({ fetch, depends }) => {
 	// fetch va primero -- el resto si puede ir en paralelo.
 	const agentRes = await fetch(`${base}/api/agent`);
 	if (!agentRes.ok) {
-		return { agent: null, faction: null, ships: [], contracts: [] };
+		return { agent: null, faction: null, ships: [] };
 	}
 	const agent = await agentRes.json();
 
-	const [factionRes, shipsRes, contractsRes] = await Promise.all([
+	const [factionRes, shipsRes] = await Promise.all([
 		fetch(`${base}/api/factions/${agent.startingFaction}`),
-		fetch(`${base}/api/ships`),
-		fetch(`${base}/api/contracts`)
+		fetch(`${base}/api/ships`)
 	]);
 
 	return {
 		agent,
 		faction: factionRes.ok ? await factionRes.json() : null,
-		ships: shipsRes.ok ? await shipsRes.json() : [],
-		contracts: contractsRes.ok ? await contractsRes.json() : []
+		ships: shipsRes.ok ? await shipsRes.json() : []
 	};
 };
