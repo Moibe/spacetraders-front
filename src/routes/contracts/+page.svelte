@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { invalidate } from '$app/navigation';
 	import { env } from '$env/dynamic/public';
 	import type { PageData } from './$types';
@@ -100,6 +101,91 @@
 			aceptandoId = null;
 		}
 	}
+
+	// Falta la siguiente entrega pendiente de un contrato ya aceptado, o null
+	// si ya se entregó todo (y solo falta cumplir).
+	function entregaPendiente(c: {
+		terms: { deliver?: { unitsFulfilled: number; unitsRequired: number }[] };
+	}) {
+		return (c.terms.deliver ?? []).find((d) => d.unitsFulfilled < d.unitsRequired) ?? null;
+	}
+
+	// Aca si importa la nave (necesita bodega y estar cerca de mercado/destino)
+	// -- a diferencia de negociar, se deja elegir, con la de mayor bodega como
+	// default (mismo criterio que usa bots/contract_runner.py).
+	const navesConBodega = $derived((data.ships as ShipLite[]).filter((n) => n.cargo.capacity > 0));
+
+	let naveTrabajo = $state<string | null>(null);
+	$effect(() => {
+		if (navesConBodega.length === 0) return;
+		const actual = untrack(() => naveTrabajo);
+		if (actual !== null && navesConBodega.some((n) => n.symbol === actual)) return;
+		naveTrabajo = navesConBodega.reduce((mejor, n) =>
+			n.cargo.capacity > mejor.cargo.capacity ? n : mejor
+		).symbol;
+	});
+
+	let trabajandoId = $state<string | null>(null);
+	let errorTrabajo = $state<{ id: string; mensaje: string } | null>(null);
+
+	async function comprarPara(contratoId: string) {
+		if (!naveTrabajo) return;
+		trabajandoId = contratoId;
+		errorTrabajo = null;
+		try {
+			const res = await fetch(
+				`${base}/api/contracts/${contratoId}/buy-cargo?ship_symbol=${encodeURIComponent(naveTrabajo)}`,
+				{ method: 'POST' }
+			);
+			if (!res.ok) throw new Error(await mensajeDeError(res));
+			await invalidate('app:contracts');
+		} catch (e) {
+			errorTrabajo = {
+				id: contratoId,
+				mensaje: e instanceof Error ? e.message : 'Error desconocido'
+			};
+		} finally {
+			trabajandoId = null;
+		}
+	}
+
+	async function entregarPara(contratoId: string) {
+		if (!naveTrabajo) return;
+		trabajandoId = contratoId;
+		errorTrabajo = null;
+		try {
+			const res = await fetch(
+				`${base}/api/contracts/${contratoId}/deliver-cargo?ship_symbol=${encodeURIComponent(naveTrabajo)}`,
+				{ method: 'POST' }
+			);
+			if (!res.ok) throw new Error(await mensajeDeError(res));
+			await invalidate('app:contracts');
+		} catch (e) {
+			errorTrabajo = {
+				id: contratoId,
+				mensaje: e instanceof Error ? e.message : 'Error desconocido'
+			};
+		} finally {
+			trabajandoId = null;
+		}
+	}
+
+	async function cumplirContrato(contratoId: string) {
+		trabajandoId = contratoId;
+		errorTrabajo = null;
+		try {
+			const res = await fetch(`${base}/api/contracts/${contratoId}/fulfill`, { method: 'POST' });
+			if (!res.ok) throw new Error(await mensajeDeError(res));
+			await invalidate('app:contracts');
+		} catch (e) {
+			errorTrabajo = {
+				id: contratoId,
+				mensaje: e instanceof Error ? e.message : 'Error desconocido'
+			};
+		} finally {
+			trabajandoId = null;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -192,6 +278,52 @@
 						{#if errorAceptar && errorAceptar.id === contrato.id}
 							<p class="error action-error">{errorAceptar.mensaje}</p>
 						{/if}
+					{:else if !contrato.fulfilled}
+						{@const pendiente = entregaPendiente(contrato)}
+						{#if pendiente}
+							{#if navesConBodega.length > 0}
+								<div class="trabajo-row">
+									<label class="ref-label">
+										Usar nave
+										<select class="ref-select" bind:value={naveTrabajo}>
+											{#each navesConBodega as nave (nave.symbol)}
+												<option value={nave.symbol}>{nave.symbol}</option>
+											{/each}
+										</select>
+									</label>
+									<button
+										type="button"
+										class="btn"
+										onclick={() => comprarPara(contrato.id)}
+										disabled={trabajandoId === contrato.id}
+									>
+										{trabajandoId === contrato.id ? 'Trabajando…' : 'Comprar'}
+									</button>
+									<button
+										type="button"
+										class="btn"
+										onclick={() => entregarPara(contrato.id)}
+										disabled={trabajandoId === contrato.id}
+									>
+										{trabajandoId === contrato.id ? 'Trabajando…' : 'Entregar'}
+									</button>
+								</div>
+							{:else}
+								<p class="note">Necesitas una nave con bodega para comprar y entregar.</p>
+							{/if}
+						{:else}
+							<button
+								type="button"
+								class="btn"
+								onclick={() => cumplirContrato(contrato.id)}
+								disabled={trabajandoId === contrato.id}
+							>
+								{trabajandoId === contrato.id ? 'Cumpliendo…' : 'Cumplir contrato'}
+							</button>
+						{/if}
+						{#if errorTrabajo && errorTrabajo.id === contrato.id}
+							<p class="error action-error">{errorTrabajo.mensaje}</p>
+						{/if}
 					{/if}
 				</div>
 			{/each}
@@ -256,6 +388,33 @@
 		color: var(--sw-text-muted);
 	}
 
+	.trabajo-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.6rem;
+		margin-top: 0.5rem;
+	}
+
+	.ref-label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		color: var(--sw-text-muted);
+		white-space: nowrap;
+	}
+
+	.ref-select {
+		padding: 0.35rem 0.6rem;
+		border-radius: 4px;
+		border: 1px solid var(--sw-blue-dim);
+		background: var(--sw-panel);
+		color: var(--sw-text);
+		font-size: 0.85rem;
+		font-family: inherit;
+	}
+
 	.btn {
 		padding: 0.4rem 0.9rem;
 		border-radius: 4px;
@@ -296,6 +455,10 @@
 
 	.card .btn {
 		margin-top: 0.5rem;
+	}
+
+	.card .trabajo-row .btn {
+		margin-top: 0;
 	}
 
 	.card .action-error {
