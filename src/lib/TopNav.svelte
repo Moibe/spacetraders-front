@@ -39,6 +39,13 @@
     >
       Ubicaciones
     </a>
+    <a
+      href="/markets"
+      class="nav-item"
+      aria-current={isActive('/markets') ? 'page' : undefined}
+    >
+      Mercados
+    </a>
     <a href="/map" class="nav-item" aria-current={isActive('/map') ? 'page' : undefined}>
       Mapa
     </a>
