@@ -56,6 +56,9 @@
     >
       Ubicaciones
     </a>
+    <a href="/map" class="nav-item" aria-current={isActive('/map') ? 'page' : undefined}>
+      Mapa
+    </a>
   </nav>
 
   <div class="spacer"></div>
