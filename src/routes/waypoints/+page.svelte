@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -18,17 +19,53 @@
 		return mapa;
 	});
 
+	// Nave desde la que se mide la distancia. Por default, la de mayor
+	// bodega -- la que de verdad sale a comerciar (mismo criterio que usa el
+	// bot de contratos para elegir nave), no la sonda que se queda fija.
+	let naveReferencia = $state<string | null>(null);
+	$effect(() => {
+		const naves = data.ships as { symbol: string; cargo: { capacity: number } }[];
+		// untrack: esta lectura es solo un guard, no debe volver a este efecto
+		// dependiente de su propia escritura (eso lo haria correr en loop).
+		if (naves.length === 0 || untrack(() => naveReferencia) !== null) return;
+		naveReferencia = naves.reduce((mejor, n) =>
+			n.cargo.capacity > mejor.cargo.capacity ? n : mejor
+		).symbol;
+	});
+
+	const origenWaypoint = $derived.by(() => {
+		const nave = (data.ships as { symbol: string; nav: { waypointSymbol: string } }[]).find(
+			(n) => n.symbol === naveReferencia
+		);
+		if (!nave) return null;
+		return (data.waypoints as { symbol: string; x: number; y: number }[]).find(
+			(w) => w.symbol === nave.nav.waypointSymbol
+		);
+	});
+
+	function distancia(w: { x: number; y: number }): number | null {
+		if (!origenWaypoint) return null;
+		return Math.hypot(w.x - origenWaypoint.x, w.y - origenWaypoint.y);
+	}
+
 	let filtro = $state('');
 
 	const waypointsFiltrados = $derived.by(() => {
 		const q = filtro.trim().toUpperCase();
-		if (!q) return data.waypoints;
-		return data.waypoints.filter(
-			(w: { symbol: string; type: string; traits: { symbol: string; name: string }[] }) =>
-				w.symbol.includes(q) ||
-				w.type.includes(q) ||
-				w.traits.some((t) => t.symbol.includes(q) || t.name.toUpperCase().includes(q))
-		);
+		const base = !q
+			? data.waypoints
+			: data.waypoints.filter(
+					(w: { symbol: string; type: string; traits: { symbol: string; name: string }[] }) =>
+						w.symbol.includes(q) ||
+						w.type.includes(q) ||
+						w.traits.some((t) => t.symbol.includes(q) || t.name.toUpperCase().includes(q))
+				);
+
+		// Ordenado por cercania cuando ya se sabe desde donde medir -- es lo
+		// que hace util a la distancia (que tan caro es llegar), no solo un
+		// numero mas en la tabla.
+		if (!origenWaypoint) return base;
+		return [...base].sort((a, b) => (distancia(a) ?? 0) - (distancia(b) ?? 0));
 	});
 </script>
 
@@ -46,18 +83,40 @@
 	{:else}
 		<p class="meta">{data.waypoints.length} waypoints en este sistema.</p>
 
-		<input
-			class="filtro"
-			type="text"
-			placeholder="Filtrar por símbolo, tipo o rasgo…"
-			bind:value={filtro}
-		/>
+		<div class="controles">
+			<input
+				class="filtro"
+				type="text"
+				placeholder="Filtrar por símbolo, tipo o rasgo…"
+				bind:value={filtro}
+			/>
+
+			{#if data.ships.length > 0}
+				<label class="ref-label">
+					Distancia desde
+					<select class="ref-select" bind:value={naveReferencia}>
+						{#each data.ships as nave (nave.symbol)}
+							<option value={nave.symbol}>{nave.symbol}</option>
+						{/each}
+					</select>
+				</label>
+			{/if}
+		</div>
+
+		{#if origenWaypoint}
+			<p class="note">
+				Distancia relativa dentro del sistema (no metros reales) desde
+				<strong>{origenWaypoint.symbol}</strong> -- a mayor distancia, más combustible consume el
+				viaje.
+			</p>
+		{/if}
 
 		<table>
 			<thead>
 				<tr>
 					<th>Símbolo</th>
 					<th>Tipo</th>
+					{#if origenWaypoint}<th>Distancia</th>{/if}
 					<th>Rasgos</th>
 				</tr>
 			</thead>
@@ -75,6 +134,9 @@
 							{w.symbol}
 						</td>
 						<td>{w.type}</td>
+						{#if origenWaypoint}
+							<td class="distancia">{distancia(w)?.toFixed(1)}</td>
+						{/if}
 						<td class="traits">
 							{#each w.traits as t (t.symbol)}
 								<span class="trait" class:destacado={DESTACADOS.has(t.symbol)} title={t.description}>
@@ -115,11 +177,18 @@
 		color: rgba(17, 17, 17, 0.7);
 	}
 
+	.controles {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 0.75rem;
+	}
+
 	.filtro {
-		width: 100%;
+		flex: 1 1 260px;
 		max-width: 360px;
 		padding: 0.5rem 0.75rem;
-		margin-bottom: 1rem;
 		border-radius: 8px;
 		border: 1px solid rgba(17, 17, 17, 0.2);
 		background: rgba(255, 255, 255, 0.55);
@@ -131,6 +200,28 @@
 		outline: none;
 		border-color: rgba(17, 17, 17, 0.4);
 		background: rgba(255, 255, 255, 0.75);
+	}
+
+	.ref-label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: 0.85rem;
+		color: rgba(17, 17, 17, 0.7);
+		white-space: nowrap;
+	}
+
+	.ref-select {
+		padding: 0.35rem 0.6rem;
+		border-radius: 8px;
+		border: 1px solid rgba(17, 17, 17, 0.2);
+		background: rgba(255, 255, 255, 0.55);
+		color: #111111;
+		font-size: 0.85rem;
+	}
+
+	.distancia {
+		font-variant-numeric: tabular-nums;
 	}
 
 	table {
