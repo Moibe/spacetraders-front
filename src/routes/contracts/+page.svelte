@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { invalidate } from '$app/navigation';
 	import { env } from '$env/dynamic/public';
+	import { withAlias, type Aliases } from '$lib/aliases';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -213,7 +214,10 @@
 					<div class="ship-chip">
 						<span class="ship-chip-symbol">{nave.symbol}</span>
 						<span class="ship-chip-meta"
-							>{ESTADO_NAVE[nave.nav.status] ?? nave.nav.status} en {nave.nav.waypointSymbol}</span
+							>{ESTADO_NAVE[nave.nav.status] ?? nave.nav.status} en {withAlias(
+								nave.nav.waypointSymbol,
+								data.aliases as Aliases
+							)}</span
 						>
 						<span class="ship-chip-meta">Bodega {nave.cargo.units}/{nave.cargo.capacity}</span>
 					</div>
@@ -261,7 +265,7 @@
 							{#each contrato.terms.deliver as entrega (entrega.tradeSymbol + entrega.destinationSymbol)}
 								<li>
 									{entrega.unitsFulfilled}/{entrega.unitsRequired} {entrega.tradeSymbol} →
-									{entrega.destinationSymbol}
+									{withAlias(entrega.destinationSymbol, data.aliases as Aliases)}
 								</li>
 							{/each}
 						</ul>

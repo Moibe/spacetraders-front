@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/public';
+import { fetchAliases } from '$lib/aliases';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch, depends }) => {
@@ -12,18 +13,20 @@ export const load: PageLoad = async ({ fetch, depends }) => {
 	// fetch va primero -- el resto si puede ir en paralelo.
 	const agentRes = await fetch(`${base}/api/agent`);
 	if (!agentRes.ok) {
-		return { agent: null, faction: null, ships: [] };
+		return { agent: null, faction: null, ships: [], aliases: {} };
 	}
 	const agent = await agentRes.json();
 
-	const [factionRes, shipsRes] = await Promise.all([
+	const [factionRes, shipsRes, aliases] = await Promise.all([
 		fetch(`${base}/api/factions/${agent.startingFaction}`),
-		fetch(`${base}/api/ships`)
+		fetch(`${base}/api/ships`),
+		fetchAliases(fetch)
 	]);
 
 	return {
 		agent,
 		faction: factionRes.ok ? await factionRes.json() : null,
-		ships: shipsRes.ok ? await shipsRes.json() : []
+		ships: shipsRes.ok ? await shipsRes.json() : [],
+		aliases
 	};
 };

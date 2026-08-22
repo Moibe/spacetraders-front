@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { invalidate } from '$app/navigation';
+	import { withAlias, type Aliases } from '$lib/aliases';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -61,7 +62,9 @@
 					<span class="stat-label">naves</span>
 				</div>
 				<div class="stat">
-					<span class="stat-value">{data.agent.headquarters}</span>
+					<span class="stat-value"
+						>{withAlias(data.agent.headquarters, data.aliases as Aliases)}</span
+					>
 					<span class="stat-label">base</span>
 				</div>
 			</div>
@@ -109,7 +112,7 @@
 					</div>
 					<p class="line">
 						{ESTADO_NAVE[ship.nav.status] ?? ship.nav.status} en
-						<strong>{ship.nav.waypointSymbol}</strong>
+						<strong>{withAlias(ship.nav.waypointSymbol, data.aliases as Aliases)}</strong>
 						{#if ship.nav.status === 'IN_TRANSIT'}
 							· llega {new Date(ship.nav.route.arrival).toLocaleTimeString('es-MX')}
 						{/if}

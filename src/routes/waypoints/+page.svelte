@@ -1,9 +1,13 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { env } from '$env/dynamic/public';
 	import StarCard from '$lib/StarCard.svelte';
+	import { withAlias, type Aliases } from '$lib/aliases';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
+
+	const base = env.PUBLIC_API_URL ?? 'http://localhost:8010';
 
 	// Rasgos que le importan a alguien recien empezando: donde se compra/vende
 	// y donde se compran naves. El resto de los rasgos se muestran igual, solo
@@ -51,23 +55,95 @@
 
 	let filtro = $state('');
 
+	// Copia local editable de los alias -- arranca con lo que trajo el load,
+	// y se actualiza sola al guardar/quitar uno sin tener que recargar toda
+	// la tabla (91 waypoints + naves) solo por eso. `aliasesListos` es un
+	// `let` comun (no reactivo): solo sirve de guard para copiar una vez,
+	// igual que el patron ya usado en naveReferencia mas abajo.
+	let aliasesLocal = $state<Aliases>({});
+	let aliasesListos = false;
+	$effect(() => {
+		if (aliasesListos) return;
+		aliasesListos = true;
+		aliasesLocal = { ...(data.aliases as Aliases) };
+	});
+
 	const waypointsFiltrados = $derived.by(() => {
 		const q = filtro.trim().toUpperCase();
-		const base = !q
+		const filtrados = !q
 			? data.waypoints
 			: data.waypoints.filter(
 					(w: { symbol: string; type: string; traits: { symbol: string; name: string }[] }) =>
 						w.symbol.includes(q) ||
 						w.type.includes(q) ||
+						(aliasesLocal[w.symbol] ?? '').toUpperCase().includes(q) ||
 						w.traits.some((t) => t.symbol.includes(q) || t.name.toUpperCase().includes(q))
 				);
 
 		// Ordenado por cercania cuando ya se sabe desde donde medir -- es lo
 		// que hace util a la distancia (que tan caro es llegar), no solo un
 		// numero mas en la tabla.
-		if (!origenWaypoint) return base;
-		return [...base].sort((a, b) => (distancia(a) ?? 0) - (distancia(b) ?? 0));
+		if (!origenWaypoint) return filtrados;
+		return [...filtrados].sort((a, b) => (distancia(a) ?? 0) - (distancia(b) ?? 0));
 	});
+
+	// ------------------------------------------------- alias (manual, sin borrado)
+	// Unico lugar del sitio donde se editan alias -- las demas paginas solo
+	// los muestran (leen /api/aliases via $lib/aliases). No es dato del
+	// juego: vive en la base de spacetraders-api, nunca se manda a la API
+	// de SpaceTraders.
+	let aliasSymbolInput = $state('');
+	let aliasTextInput = $state('');
+	let guardandoAlias = $state(false);
+	let errorAlias = $state<string | null>(null);
+
+	async function mensajeDeError(res: Response): Promise<string> {
+		const cuerpo = await res.json().catch(() => null);
+		return cuerpo?.detail ?? `Error ${res.status}`;
+	}
+
+	async function guardarAlias() {
+		const symbol = aliasSymbolInput.trim().toUpperCase();
+		const alias = aliasTextInput.trim();
+		if (!symbol || !alias) return;
+		guardandoAlias = true;
+		errorAlias = null;
+		try {
+			const res = await fetch(
+				`${base}/api/aliases/${encodeURIComponent(symbol)}?alias=${encodeURIComponent(alias)}`,
+				{ method: 'PUT' }
+			);
+			if (!res.ok) throw new Error(await mensajeDeError(res));
+			aliasesLocal = { ...aliasesLocal, [symbol]: alias };
+			aliasSymbolInput = '';
+			aliasTextInput = '';
+		} catch (e) {
+			errorAlias = e instanceof Error ? e.message : 'Error desconocido';
+		} finally {
+			guardandoAlias = false;
+		}
+	}
+
+	async function quitarAlias() {
+		const symbol = aliasSymbolInput.trim().toUpperCase();
+		if (!symbol) return;
+		guardandoAlias = true;
+		errorAlias = null;
+		try {
+			const res = await fetch(`${base}/api/aliases/${encodeURIComponent(symbol)}`, {
+				method: 'DELETE'
+			});
+			if (!res.ok) throw new Error(await mensajeDeError(res));
+			const restante = { ...aliasesLocal };
+			delete restante[symbol];
+			aliasesLocal = restante;
+			aliasSymbolInput = '';
+		} catch (e) {
+			errorAlias = e instanceof Error ? e.message : 'Error desconocido';
+		} finally {
+			guardandoAlias = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -85,6 +161,36 @@
 		<p class="meta">{data.waypoints.length} waypoints en este sistema.</p>
 
 		<StarCard system={data.system} systemInfo={data.systemInfo} />
+
+		<div class="alias-form">
+			<input
+				list="waypoint-symbols"
+				class="filtro alias-input"
+				type="text"
+				placeholder="Símbolo (ej. X1-SC86-A1)"
+				bind:value={aliasSymbolInput}
+			/>
+			<datalist id="waypoint-symbols">
+				{#each data.waypoints as w (w.symbol)}
+					<option value={w.symbol}></option>
+				{/each}
+			</datalist>
+			<input
+				class="filtro alias-input"
+				type="text"
+				placeholder="Alias (ej. Tierra)"
+				bind:value={aliasTextInput}
+			/>
+			<button type="button" class="btn" onclick={guardarAlias} disabled={guardandoAlias}>
+				{guardandoAlias ? 'Guardando…' : 'Guardar alias'}
+			</button>
+			<button type="button" class="btn" onclick={quitarAlias} disabled={guardandoAlias}>
+				Quitar alias
+			</button>
+		</div>
+		{#if errorAlias}
+			<p class="error action-error">{errorAlias}</p>
+		{/if}
 
 		<div class="controles">
 			<input
@@ -109,8 +215,8 @@
 		{#if origenWaypoint}
 			<p class="note">
 				Distancia relativa dentro del sistema (no metros reales) desde
-				<strong>{origenWaypoint.symbol}</strong> -- a mayor distancia, más combustible consume el
-				viaje.
+				<strong>{withAlias(origenWaypoint.symbol, aliasesLocal)}</strong> -- a mayor distancia, más
+				combustible consume el viaje.
 			</p>
 		{/if}
 
@@ -134,7 +240,7 @@
 									</svg>
 								</span>
 							{/if}
-							{w.symbol}
+							{withAlias(w.symbol, aliasesLocal)}
 						</td>
 						<td>{w.type}</td>
 						{#if origenWaypoint}
@@ -182,6 +288,50 @@
 		margin: 0.25rem 0 0.75rem;
 		font-size: 0.9rem;
 		color: var(--sw-text-muted);
+	}
+
+	.alias-form {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.6rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.alias-input {
+		flex: 1 1 200px;
+		max-width: 240px;
+		margin-bottom: 0;
+	}
+
+	.btn {
+		padding: 0.4rem 0.9rem;
+		border-radius: 4px;
+		border: 1px solid var(--sw-blue);
+		background: var(--sw-blue-faint);
+		color: var(--sw-blue);
+		font-size: 0.85rem;
+		font-weight: 700;
+		font-family: inherit;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		cursor: pointer;
+		transition:
+			background 0.15s ease,
+			opacity 0.15s ease;
+	}
+
+	.btn:hover:not(:disabled) {
+		background: rgba(90, 200, 250, 0.28);
+	}
+
+	.btn:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+
+	.action-error {
+		margin: 0 0 0.75rem;
 	}
 
 	.controles {

@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/public';
+import { fetchAliases } from '$lib/aliases';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ fetch, depends }) => {
@@ -8,15 +9,17 @@ export const load: PageLoad = async ({ fetch, depends }) => {
 
 	const base = env.PUBLIC_API_URL ?? 'http://localhost:8010';
 
-	const [agentRes, shipsRes, contractsRes] = await Promise.all([
+	const [agentRes, shipsRes, contractsRes, aliases] = await Promise.all([
 		fetch(`${base}/api/agent`),
 		fetch(`${base}/api/ships`),
-		fetch(`${base}/api/contracts`)
+		fetch(`${base}/api/contracts`),
+		fetchAliases(fetch)
 	]);
 
 	return {
 		agent: agentRes.ok ? await agentRes.json() : null,
 		ships: shipsRes.ok ? await shipsRes.json() : [],
-		contracts: contractsRes.ok ? await contractsRes.json() : []
+		contracts: contractsRes.ok ? await contractsRes.json() : [],
+		aliases
 	};
 };

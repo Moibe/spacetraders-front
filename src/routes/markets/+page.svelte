@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withAlias, type Aliases } from '$lib/aliases';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -9,13 +10,16 @@
 
 	// Una sola tabla filtrable resuelve las dos preguntas: "¿qué vende cada
 	// mercado?" (mírala completa) y "¿dónde compro/vendo X?" (escribe la
-	// mercancía) -- mismo patrón de filtro que ya usa /waypoints.
+	// mercancía) -- mismo patrón de filtro que ya usa /waypoints. Tambien
+	// busca por alias (ej. "Tierra" encuentra X1-SC86-A1).
 	const marketsFiltrados = $derived.by(() => {
 		const q = filtro.trim().toUpperCase();
 		if (!q) return data.markets as Market[];
+		const aliases = data.aliases as Aliases;
 		return (data.markets as Market[]).filter(
 			(m) =>
 				m.waypointSymbol.includes(q) ||
+				(aliases[m.waypointSymbol] ?? '').toUpperCase().includes(q) ||
 				m.exports.some((b) => b.includes(q)) ||
 				m.imports.some((b) => b.includes(q)) ||
 				m.exchange.some((b) => b.includes(q))
@@ -84,7 +88,7 @@
 			<tbody>
 				{#each marketsFiltrados as m (m.waypointSymbol)}
 					<tr>
-						<td class="symbol-cell">{m.waypointSymbol}</td>
+						<td class="symbol-cell">{withAlias(m.waypointSymbol, data.aliases as Aliases)}</td>
 						<td>{m.exports.join(', ') || '—'}</td>
 						<td>{m.imports.join(', ') || '—'}</td>
 						<td>{m.exchange.join(', ') || '—'}</td>

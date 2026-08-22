@@ -1,5 +1,6 @@
 <script lang="ts">
 	import StarCard from '$lib/StarCard.svelte';
+	import { withAlias, type Aliases } from '$lib/aliases';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -170,7 +171,8 @@
 					class="punto-grupo"
 					tabindex="0"
 					role="button"
-					aria-label="{w.symbol}, {w.type}{destacado ? ', con marketplace o shipyard' : ''}{naves
+					aria-label="{withAlias(w.symbol, data.aliases as Aliases)}, {w
+						.type}{destacado ? ', con marketplace o shipyard' : ''}{naves
 						? ', tu nave está aquí'
 						: ''}"
 					onmouseenter={() => (activo = w.symbol)}
@@ -202,9 +204,9 @@
 			{#if puntoActivo}
 				{@const p = proyectar(puntoActivo)}
 				<g class="tooltip" transform="translate({p.px} {Math.max(MARGIN, p.py - 20)})">
-					<rect x="-72" y="-16" width="144" height="20" rx="5" class="tooltip-fondo" />
+					<rect x="-120" y="-16" width="240" height="20" rx="5" class="tooltip-fondo" />
 					<text x="0" y="-2" text-anchor="middle" class="tooltip-texto"
-						>{puntoActivo.symbol} · {puntoActivo.type}</text
+						>{withAlias(puntoActivo.symbol, data.aliases as Aliases)} · {puntoActivo.type}</text
 					>
 				</g>
 			{/if}
