@@ -49,6 +49,13 @@
     <a href="/map" class="nav-item" aria-current={isActive('/map') ? 'page' : undefined}>
       Mapa
     </a>
+    <a
+      href="/seasons"
+      class="nav-item"
+      aria-current={isActive('/seasons') ? 'page' : undefined}
+    >
+      Temporadas
+    </a>
   </nav>
 
   <div class="spacer"></div>
